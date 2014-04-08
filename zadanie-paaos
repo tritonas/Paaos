@@ -1,0 +1,148 @@
+LSB=/usr/bin/lsb_release
+
+# Zobrazenie Menu na obrazovke
+function show_menu() {
+date
+echo "------------------------------------------------------"
+echo " Hlavne Menu"
+echo "------------------------------------------------------"
+echo "1. Informacie o operacnom systeme"
+echo "2. Nazov servera a domena"
+echo "3. Zoznam otvorenych sietovych pripojeni"
+echo "4. Zoznam otvorenych sietovych portov"
+echo "5. Zoznam vytvorenych skupin pouzivatelov v systeme s vypisom clenov"
+echo "6. Vypis volnej a pouzitej pamate"
+echo "7. Zoznam preruseni pouzitych v systeme"
+echo "8. Vypis vsetkych procesov v systeme beziacich v systeme"
+echo "9. Vypis procesov beziacich v systeme zoradene podla vyuzitia CPU"
+echo "10. Vypis procesov beziacich v systeme zoradene podla vyuzitia RAM"
+
+echo "Q - Koniec"
+}
+
+#funkcia pauzy
+function pause(){
+local message="$@"
+[ -z $message ] && message="Stlac [Enter] na pokracovanie..."
+read -p "$message" readEnterKey
+}
+
+#funkcia na vypis hlavicky
+function write_header(){
+local h="$@"
+echo "-----------------------------------------------------"
+echo " ${h}"
+echo "-----------------------------------------------------"
+}
+
+#info o systeme
+function os_info(){
+write_header "Info o systeme"
+echo "operacny system: $(uname)"
+[ -x $LSB ] && $LSB -a || echo "$LSB program nie je instalovany (set\$LSB variable)"
+pause
+}
+
+#server a domena
+function server(){
+local dnsips=$( sed -e '/^$/d' /etc/resolv.conf | awk '{if (tolower($1)=="nameserver") print $2}')
+write_header " Hostname a DNS info "
+echo " Hostname : $(hostname -s)"
+echo " DNS domain : $(hostname -d)"
+echo " Domenove meno : $(hostname -f)"
+echo " Sietova adreska (IP) : $(hostname -i)"
+echo " DNS server (DNS IP) : ${dnsips}"
+pause
+}
+
+#otvorene sietove pripojenia
+function connections(){
+write_header "Zoznam otvorenych sietovych pripojeni"
+lsof -i
+pause
+}
+
+#otvorene sietove porty
+function ports(){
+write_header "Zoznam otvorenych  sietovych portov"
+netstat -lntu
+pause
+}
+
+#skupiny a ich clenovia
+function users_groups(){ 
+write_header "Zoznam vytvorenych skupin v systeme s vypisom clenov"
+echo "Skupina          Clenovia"
+echo "-------------------------" 
+getent group | awk -F: '{print $1,$4}'|column -t
+pause
+}
+
+#info o pamati
+function memory(){
+write_header "Volna a pouzita pamat"
+free -m
+write_header "Virtualna pamat"
+vmstat
+pause
+}
+
+#prerusenia
+function interrupts(){
+write_header "Zoznam preruseni pouzitych v systeme"
+cat /proc/interrupts
+pause
+}
+
+#procesy systemu
+function proc_system(){
+write_header "Vypis vsetkych procesov v systeme"
+ps -auxf
+pause
+}
+
+#procesy podla CPU
+function proc_cpu(){
+write_header "Vypis procesov v systeme podla vyuzitia CPU"
+sleep 1
+ps -eo pcpu,pid,cmd | sort -k 1 -nr
+pause
+}
+
+#procesy podla RAM
+function proc_ram(){
+write_header "Vypis procesov v systeme podla vyuzitia RAM"
+ps -eo pmem,pid,cmd | sort -k 1 -nr
+pause
+}
+
+#nacitanie volby 
+function read_input(){
+local c
+#created by Jozef Grajciar
+read -p "Vyber volbu [1-10] " c
+case $c in
+1) os_info ;;
+2) server ;;
+3) connections ;;
+4) ports ;;
+5) users_groups ;;
+6) memory ;;
+7) interrupts ;;
+8) proc_system ;;
+9) proc_cpu ;;
+10) proc_ram ;;
+Q) echo "Koncim"; exit 0;;
+*)
+echo "Spatna volba! Zvol od 1 do 10"
+pause
+esac
+}
+
+#main
+while true
+do
+clear
+show_menu
+read_input
+done
