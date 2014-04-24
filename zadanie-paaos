@@ -119,7 +119,6 @@ pause
 #nacitanie volby 
 function read_input(){
 local c
-#created by Jozef Grajciar
 read -p "Vyber volbu [1-10] " c
 case $c in
 1) os_info ;;
